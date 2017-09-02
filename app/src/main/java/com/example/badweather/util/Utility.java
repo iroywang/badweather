@@ -64,6 +64,7 @@ public class Utility {
                     county.setCityCode(cityId);
                     county.setCountyName(jsonObject.getString("name"));
                     county.setWeatherId(jsonObject.getString("weather_id"));
+                    county.save();
                 }
                 return true;
             } catch (Exception e) {

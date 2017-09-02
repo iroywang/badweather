@@ -42,12 +42,12 @@ public class ChooseAreaFragment extends Fragment {
     List<String> dataList=new ArrayList<>();
     ArrayAdapter<String> adapter;
     int currentLevel;
-    final static int LEVEL_PROVINCE=0;
-    final static int LEVEL_CITY=1;
-    final static int LEVEL_COUNTY=2;
-    List<Province> provinceList=new ArrayList<>();
-    List<City> cityList=new ArrayList<>();
-    List<County> countyList=new ArrayList<>();
+    public final static int LEVEL_PROVINCE=0;
+    public final static int LEVEL_CITY=1;
+    public final static int LEVEL_COUNTY=2;
+    List<Province> provinceList;
+    List<City> cityList;
+    List<County> countyList;
     Province selectedProvince;
     private County selectedCounty;
     private City selectedCity;
@@ -59,7 +59,7 @@ public class ChooseAreaFragment extends Fragment {
         title = (TextView) view.findViewById(R.id.title_text);
         button=(Button) view.findViewById(R.id.back_button);
         listView=(ListView)view.findViewById(R.id.listview);
-        adapter=new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1,dataList);
+        adapter=new ArrayAdapter<String>(getContext(),android.R.layout.simple_list_item_1,dataList);
         listView.setAdapter(adapter);
         return view;
     }
@@ -74,7 +74,7 @@ public class ChooseAreaFragment extends Fragment {
                     selectedProvince=provinceList.get(i);
                     queryCity();
                 }
-                if (currentLevel==LEVEL_CITY){
+               else if (currentLevel==LEVEL_CITY){
                     selectedCity=cityList.get(i);
                     queryCounty();
                 }
@@ -84,7 +84,7 @@ public class ChooseAreaFragment extends Fragment {
         button.setOnClickListener((v)->{
             if (currentLevel==LEVEL_COUNTY){
                 queryCity();
-            }
+            }   else
             if (currentLevel==LEVEL_CITY){
                 queryProvince();
             }
@@ -95,7 +95,7 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCounty() {
         title.setText(selectedCity.getCityName());
         button.setVisibility(View.VISIBLE);
-        countyList=DataSupport.where("citycode=?",String.valueOf(selectedCity.getCityCode())).find(County.class);
+        countyList=DataSupport.where("cityCode=?",String.valueOf(selectedCity.getCityCode())).find(County.class);
         if (countyList.size()>0){
             dataList.clear();
             for (County county:countyList){
@@ -106,7 +106,9 @@ public class ChooseAreaFragment extends Fragment {
             currentLevel=LEVEL_COUNTY;
         }
         else {
-            String address="http://guolin.tech/api/china/"+selectedProvince.getProvinceCode()+"/"+selectedCity.getCityCode();
+            int provinceCode=selectedProvince.getProvinceCode();
+            int t=selectedCity.getCityCode();
+            String address="http://guolin.tech/api/china/"+provinceCode+"/"+t;
             queryFromServer(address,"county");
         }
     }
@@ -125,7 +127,8 @@ public class ChooseAreaFragment extends Fragment {
             currentLevel=LEVEL_CITY;
         }
         else{
-            String address="http://guolin.tech/api/china/"+selectedProvince.getProvinceCode();
+            int code=selectedProvince.getProvinceCode();
+            String address="http://guolin.tech/api/china/"+code;
             queryFromServer(address,"city");
         }
     }
@@ -170,24 +173,31 @@ public class ChooseAreaFragment extends Fragment {
                 if (type.equals("province")) {
                     result = Utility.handleProvinceResponse(responseText);
                 }
+                else
                 if (type.equals("city")){
                     result=Utility.handleCityResponse(responseText,selectedProvince.getProvinceCode());
-                }
+                }else
                 if (type.equals("county")){
-                    result=Utility.handleCountyResponse(responseText,selectedCity.getId());
+                    result=Utility.handleCountyResponse(responseText,selectedCity.getCityCode());
                 }
                 if (result){
-                    getActivity().runOnUiThread(()->{
-                        closeProcessDialog();
-                        if ("province".equals(type)){
-                            queryProvince();
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            {
+                                closeProcessDialog();
+                                if ("province".equals(type)){
+                                    queryProvince();
+                                }else
+                                if ("city".equals(type)){
+                                    queryCity();
+                                }else
+                                if ("county".equals(type)){
+                                    queryCounty();
+                                }
+
                         }
-                        if ("city".equals(type)){
-                            queryCity();
-                        }
-                        if ("county".equals(type)){
-                            queryCounty();
-                        }
+                    }
                     });
                 }
             }
